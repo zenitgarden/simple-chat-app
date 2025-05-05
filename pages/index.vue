@@ -15,7 +15,7 @@ const chatRows = useChatRows()
 
 const userData = user.value as User
 const api = `${config.public.apiBase}`
-const wsUrl = `ws://${api}/ws?token=` + userData.token
+const wsUrl = `ws://${config.public.wsBase}/ws?token=` + userData.token
 
 const modal = ref(false)
 const options = ref<{ label: string, value: string, avatar: AvatarProps }[]>([])

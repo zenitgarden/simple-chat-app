@@ -20,6 +20,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.BACKEND_API,
+      wsBase: process.env.WS_BASE 
     },
   },
   modules: [
