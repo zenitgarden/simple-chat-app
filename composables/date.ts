@@ -29,5 +29,27 @@ export const useDate = () => {
     return format(sent, 'd/MMM/yyyy') 
   }
 
-  return { formatDate, formatSentAt };
+  const formatChatRow = (sentAtIso: string): string => {
+    const sent = parseISO(sentAtIso)
+    const now = new Date()
+
+    if(isToday(sent)) {
+      return format(sent, 'hh:mm a');
+    }
+  
+    if (isYesterday(sent)) {
+      return 'Yesterday'
+    }
+  
+    const oneWeekAgo = subDays(now, 7)
+  
+    if (isWithinInterval(sent, { start: oneWeekAgo, end: now })) {
+      return format(sent, 'EEEE') // "Wednesday", "Monday", etc.
+    }
+  
+    return format(sent, 'd/MMM/yyyy') 
+  }
+
+
+  return { formatDate, formatSentAt, formatChatRow };
 };
