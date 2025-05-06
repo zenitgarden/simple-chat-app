@@ -22,7 +22,6 @@ const toast = useToast()
 const loading = ref(false)
 const isLoginSuccess = ref(true)
 const showPassword = ref(false)
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
 
 function toggleShowPassword() {
     showPassword.value = !showPassword.value
@@ -54,7 +53,6 @@ async function onSubmit(event: FormSubmitEvent<TypeLoginSchema>) {
     } finally {
         loading.value = false
     }
-    await delay(3000)
     loading.value = false
 }
 </script>

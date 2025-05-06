@@ -35,13 +35,17 @@ function toggleShowPassword() {
 async function onSubmit(event: FormSubmitEvent<TypeRegisterSchema>) {
     loading.value = true
     try {
-        await fetch(api + '/api/auth/register', {
+        const res = await fetch(api + '/api/auth/register', {
             method: 'POST',
             body: JSON.stringify(event.data),
             headers: {
                 'Content-Type': 'application/json'
             }
         })
+
+        if(!res.ok) {
+            throw new Error(`Fetch error: ${res.status}`)
+        }
 
         state.name = undefined
         state.email = undefined

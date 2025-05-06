@@ -136,7 +136,6 @@ const fetchUsers = useDebounceFn(async (search: string = '') => {
 }, 500)
 
 async function openChat(id: string) {
-    conversationId.value = id
     try {
         const res: ResponseSuccess<{
             id: string;
@@ -152,6 +151,7 @@ async function openChat(id: string) {
                 'Content-Type': 'application/json'
             },
         })
+        conversationId.value = id
 
         if (res.data.length > 0) {
             const msgs = res.data.map((message) => ({
@@ -214,7 +214,9 @@ async function createNewConversation() {
             lastMessage: '',
             sentAt: '',
             title: body.isGroup ? body.title || '' : (newConversation.userName || ''),
+            createdBy: userData.id
         })
+        conversationId.value = res.data.id
     } catch {
         toast.add({ title: 'Failed start new chat !', description: 'Please try again later.', color: 'error' })
     } finally {
@@ -351,7 +353,7 @@ watch(modal, (open) => {
                         </button>
                     </div>
 
-                    <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title"
+                    <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title" :is-group="chat.isGroup" :created-by="chat.createdBy"
                         :conversation-id="conversationId" :last-message="chat.lastMessage" :time="chat.sentAt !== null ? chat.sentAt : ''"
                         @click="openChat(chat.id)" />
                 </div>

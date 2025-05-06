@@ -28,6 +28,7 @@ export interface ChatRow {
     isGroup: boolean;
     lastMessage: string;
     sentAt: string | null;
+    createdBy: string;
 }
 
 export interface LatestConversation {
