@@ -27,18 +27,32 @@ export const useWebSocket = () => {
         return
       }
 
+
+      if (data.type === 'typing' && data.userId !== userData.id && data.conversationId === conversationId.value) {
+        addTypingMessage(data.conversationId, data.userName)
+        addChatTypingMessage(data.conversationId)
+        return;
+      }
+
+      if (data.type === 'stop_typing' && data.userId !== userData.id && data.conversationId === conversationId.value) {
+        resetTypingMessage()
+        resetChatTypingMessage(data.conversationId)
+        return;
+      }
+
       const isConversationExist = chatRows.value.find((row) => row.id === data.conversationId)
 
       if (data.conversationId === conversationId.value) {
+        resetTypingMessage()
         messages.value.unshift({
           content: data.content,
           time: data.time,
           userId: data.userId,
           userName: data.userName,
         })
-      } 
+      }
 
-      if(userData.id != data.userId && data.type === 'message' && !isConversationExist) {
+      if (userData.id != data.userId && data.type === 'message' && !isConversationExist) {
         $fetch<{ title: string; isGroup: boolean }>(api + '/api/conversation/' + data.conversationId, {
           method: 'GET',
           headers: {
@@ -52,7 +66,8 @@ export const useWebSocket = () => {
             isGroup: res.isGroup,
             lastMessage: data.content,
             sentAt: data.time,
-            createdBy: data.userId
+            createdBy: data.userId,
+            typingMessage: ''
           })
         }).catch(() => {
           chatRows.value.unshift({
@@ -61,19 +76,33 @@ export const useWebSocket = () => {
             isGroup: false,
             lastMessage: data.content,
             sentAt: data.time,
-            createdBy: data.userId
+            createdBy: data.userId,
+            typingMessage: ''
           })
         })
       }
 
+      if (data.type === 'typing' || data.type === 'stop_typing' && data.conversationId !== conversationId.value) {
+        if (data.type === 'stop_typing') {
+          resetTypingMessage()
+          resetChatTypingMessage(data.conversationId)
+        }
+
+        if (data.type === 'typing') {
+          addTypingMessage(data.conversationId, data.userName)
+          addChatTypingMessage(data.conversationId)
+        }
+
+        return
+      }
+
+
       chatRows.value.forEach((row) => {
-        if (row.id === conversationId.value) {
+        if (row.id === data.conversationId) {
           row.lastMessage = data.content
           return
         }
       })
-
-      console.log('Received:', event.data)
     }
 
     socket.value.onclose = () => {

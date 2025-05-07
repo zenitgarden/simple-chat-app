@@ -29,6 +29,7 @@ export interface ChatRow {
     lastMessage: string;
     sentAt: string | null;
     createdBy: string;
+    typingMessage: string
 }
 
 export interface LatestConversation {

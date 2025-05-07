@@ -10,6 +10,7 @@ const props = defineProps<{
     conversationId: string
     isGroup: boolean
     createdBy: string
+    typingMessage: string
 }>()
 
 const { formatChatRow } = useDate()
@@ -49,7 +50,7 @@ const lastMessage = () => {
                     {{ time.length > 0 ? formatChatRow(time) : '' }}
                 </span>
             </div>
-            <p :class="['text-sm truncate text-gray-500']">{{ lastMessage() }}</p>
+            <p :class="['text-sm truncate text-gray-500', typingMessage.length > 0 ? 'font-semibold text-teal-500' : '']">{{ typingMessage.length > 0 ? typingMessage : lastMessage() }}</p>
         </div>
     </div>
 </template>

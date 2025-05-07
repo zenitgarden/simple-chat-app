@@ -18,7 +18,7 @@ const api = `${config.public.apiBase}`
 const wsUrl = `${config.public.wsBase}/ws?token=` + userData.token
 
 const modal = ref(false)
-const options = ref<{ label: string, value: string, avatar: AvatarProps }[]>([])
+const options = ref<{ label: string, value: string, avatar: { alt: string} }[]>([])
 const isLoading = ref(false)
 const searchTerm = ref('')
 const selectedUser = ref<{ label: string, value: string, avatar: AvatarProps } | null>(null)
@@ -89,7 +89,17 @@ onMounted(async () => {
         }
 
         if (chatsJson.data.length) {
-            chatRows.value = chatsJson.data
+            chatRows.value = chatsJson.data.map((chat) => {
+                return {
+                    id: chat.id,
+                    title: chat.title,
+                    isGroup: chat.isGroup,
+                    lastMessage: chat.lastMessage,
+                    sentAt: chat.sentAt,
+                    createdBy: chat.createdBy,
+                    typingMessage: ''
+                }
+            })
         }
 
         if (conversationsLatestJson.data !== null) {
@@ -214,7 +224,8 @@ async function createNewConversation() {
             lastMessage: '',
             sentAt: '',
             title: body.isGroup ? body.title || '' : (newConversation.userName || ''),
-            createdBy: userData.id
+            createdBy: userData.id,
+            typingMessage: ''
         })
         conversationId.value = res.data.id
     } catch {
@@ -355,7 +366,7 @@ watch(modal, (open) => {
 
                     <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title" :is-group="chat.isGroup" :created-by="chat.createdBy"
                         :conversation-id="conversationId" :last-message="chat.lastMessage" :time="chat.sentAt !== null ? chat.sentAt : ''"
-                        @click="openChat(chat.id)" />
+                        :typing-message="chat.typingMessage" @click="openChat(chat.id)" />
                 </div>
             </div>
 

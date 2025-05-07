@@ -3,6 +3,8 @@ import type { Message, ResponseSuccess } from '~/types/global';
 import type { User } from '../types/global';
 import { useDate } from '~/composables/date';
 import { useChatRows } from '~/composables/chat';
+import TypingIndicator from './TypingIndicator.vue';
+import { useDebounceFn } from '@vueuse/core'
 
 const props = defineProps<{
     send: (msg: { content: string, type: string }) => void
@@ -24,6 +26,9 @@ const textarea = ref(null)
 const { formatDate, formatSentAt } = useDate()
 const page = ref(1)
 const reachedEnd = ref(false)
+
+
+let typingTimeout: ReturnType<typeof setTimeout> | null = null
 
 function handleSubmit() {
     if (!message.value.trim()) return
@@ -130,6 +135,23 @@ const handleScroll = async () => {
     }
 }
 
+const debouncedSendTyping = useDebounceFn(() => {
+    props.send({
+        content: '',
+        type: 'typing',
+    })
+
+    // Reset the isTyping status after 3 seconds of no typing
+    if (typingTimeout) clearTimeout(typingTimeout)
+    typingTimeout = setTimeout(() => {
+        props.send({
+            content: '',
+            type: 'stop_typing',
+        })
+    }, 3000)
+}, 500) // 500ms debounce
+
+
 watch(
     () => props.messages.length,
     async () => {
@@ -142,6 +164,11 @@ watch(
     { immediate: true }
 )
 
+watch(message, () => {
+    if(!message.value) return
+    debouncedSendTyping()
+})
+
 onMounted(() => {
     resizeTextarea()
 })
@@ -153,29 +180,29 @@ onMounted(() => {
         <!-- Chat Messages -->
 
         <div v-if="messages.length === 0" class="flex h-full justify-center items-center py-2">
-                <div class="flex flex-col items-center justify-center text-center text-gray-500 py-16 space-y-4">
-                    <div class="bg-blue-100 text-blue-500 rounded-full p-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8-1.657 0-3.204-.402-4.5-1.086L3 20l1.308-3.924C3.478 15.083 3 13.578 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold">Start chatting</h3>
-                    <p class="text-sm text-gray-400">
-                        Your messages will appear here.
-                    </p>
+            <div class="flex flex-col items-center justify-center text-center text-gray-500 py-16 space-y-4">
+                <div class="bg-blue-100 text-blue-500 rounded-full p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8-1.657 0-3.204-.402-4.5-1.086L3 20l1.308-3.924C3.478 15.083 3 13.578 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
                 </div>
+                <h3 class="text-lg font-semibold">Start chatting</h3>
+                <p class="text-sm text-gray-400">
+                    Your messages will appear here.
+                </p>
             </div>
+        </div>
+
         <div ref="chatContainer" class="flex flex-col p-6 overflow-y-auto space-y-6" @scroll="handleScroll">
             <div v-if="isLoading" class="flex justify-center items-center py-2">
                 <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
                     viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                 </svg>
             </div>
-
 
             <div v-for="([label, group]) in reversedMessages" :key="label" class="flex flex-col space-y-3">
 
@@ -201,18 +228,17 @@ onMounted(() => {
                     ]">
                         {{ m.content }}
                         <div v-if="m.userId !== user.id"
-                            class="absolute -left-2 top-3 w-0 h-0 border-t-[10px] border-t-transparent border-r-[12px] border-r-white border-b-[10px] border-b-transparent"/>
+                            class="absolute -left-2 top-3 w-0 h-0 border-t-[10px] border-t-transparent border-r-[12px] border-r-white border-b-[10px] border-b-transparent" />
                         <div v-else
-                            class="absolute -right-2 top-3 w-0 h-0 border-t-[10px] border-t-transparent border-l-[12px] border-l-slate-200 border-b-[10px] border-b-transparent"/>
+                            class="absolute -right-2 top-3 w-0 h-0 border-t-[10px] border-t-transparent border-l-[12px] border-l-slate-200 border-b-[10px] border-b-transparent" />
                     </div>
 
                 </div>
             </div>
         </div>
 
-
-        <div class="flex items-center bg-white p-2 rounded-lg shadow-md mx-6 my-6">
-
+        <div class="flex items-center bg-white p-2 rounded-lg shadow-md mx-6 my-6 relative">
+            <TypingIndicator/>
             <textarea ref="textarea" v-model="message" rows="1"
                 class="w-full resize-none max-h-40 overflow-auto border-none focus:ring-0 rounded-lg px-4 text-sm leading-tight outline-none"
                 placeholder="Write your message..." @input="resizeTextarea" />
