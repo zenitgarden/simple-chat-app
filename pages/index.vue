@@ -110,7 +110,6 @@ onMounted(async () => {
                 time: message.sent_at
             }))
             conversationId.value = conversationsLatestJson.data.conversation_id
-            conversationId.value = conversationsLatestJson.data.conversation_id
         }
     } catch {
         toast.add({ title: 'Something went wrong !', description: 'Please try again later.', color: 'error' })

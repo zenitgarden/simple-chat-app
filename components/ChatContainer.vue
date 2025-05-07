@@ -152,6 +152,12 @@ const debouncedSendTyping = useDebounceFn(() => {
 }, 500) // 500ms debounce
 
 
+const isTyping = () => {
+   const current = chatRows.value.find((row) => row.id === conversationId.value)
+   return current?.typingMessage ?? ''
+}
+
+
 watch(
     () => props.messages.length,
     async () => {
@@ -238,7 +244,7 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center bg-white p-2 rounded-lg shadow-md mx-6 my-6 relative">
-            <TypingIndicator/>
+            <TypingIndicator v-if="isTyping().length > 0" :name="isTyping()" />
             <textarea ref="textarea" v-model="message" rows="1"
                 class="w-full resize-none max-h-40 overflow-auto border-none focus:ring-0 rounded-lg px-4 text-sm leading-tight outline-none"
                 placeholder="Write your message..." @input="resizeTextarea" />

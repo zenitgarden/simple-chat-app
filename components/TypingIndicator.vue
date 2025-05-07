@@ -1,12 +1,13 @@
 <script setup lang="ts">
-const typingState = useUserTyping()
-const conversationId = useConversationId()
+defineProps<{
+    name: string
+}>()
 
 </script>
-
+ 
 <template>
-  <div v-if="typingState.id === conversationId" class="flex items-center space-x-1 absolute -top-6 left-2">
-    <span class="text-gray-500 text-sm">{{ typingState.name }} is typing</span>
+  <div class="flex items-center space-x-1 absolute -top-6 left-2">
+    <span class="text-gray-500 text-sm">{{ name }}</span>
     <div class="flex space-x-1">
       <span v-for="n in 3" :key="n" :class="['dot', { [`dot-${n}`]: true }]" />
     </div>

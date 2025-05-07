@@ -1,6 +1,6 @@
 // composables/useWebSocket.ts
 import { ref } from 'vue'
-import type { Message, User, WsMessage } from '~/types/global'
+import type { Message, ResponseSuccess, User, WsMessage } from '~/types/global'
 import { useConversationId } from './useConversationId'
 import { useChatRows } from '~/composables/chat';
 
@@ -53,17 +53,18 @@ export const useWebSocket = () => {
       }
 
       if (userData.id != data.userId && data.type === 'message' && !isConversationExist) {
-        $fetch<{ title: string; isGroup: boolean }>(api + '/api/conversation/' + data.conversationId, {
+        $fetch<ResponseSuccess<{ title: string; isGroup: boolean }>>(api + '/api/conversations/' + data.conversationId, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${userData.token}`,
             'Content-Type': 'application/json'
           },
         }).then((res) => {
+          const { title, isGroup } = res.data;
           chatRows.value.unshift({
             id: data.conversationId,
-            title: res.title,
-            isGroup: res.isGroup,
+            title: title,
+            isGroup: isGroup,
             lastMessage: data.content,
             sentAt: data.time,
             createdBy: data.userId,
