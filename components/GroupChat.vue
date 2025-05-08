@@ -33,7 +33,6 @@ const { data: conversations } = await useFetch<{ data: { id: string; title: stri
     watch: [query],
 })
 
-console.log(conversations.value?.data.length);
 </script>
 
 
