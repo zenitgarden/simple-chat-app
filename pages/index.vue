@@ -18,7 +18,7 @@ const api = `${config.public.apiBase}`
 const wsUrl = `${config.public.wsBase}/ws?token=` + userData.token
 
 const modal = ref(false)
-const options = ref<{ label: string, value: string, avatar: { alt: string} }[]>([])
+const options = ref<{ label: string, value: string, avatar: { alt: string } }[]>([])
 const isLoading = ref(false)
 const searchTerm = ref('')
 const selectedUser = ref<{ label: string, value: string, avatar: AvatarProps } | null>(null)
@@ -208,7 +208,7 @@ async function createNewConversation() {
             delete body.userId
         }
 
-        const res: ResponseSuccess<{ id: string; title: string; isGroup: boolean}> = await $fetch(api + '/api/conversations', {
+        const res: ResponseSuccess<{ id: string; title: string; isGroup: boolean }> = await $fetch(api + '/api/conversations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${userData.token}`,
@@ -363,8 +363,9 @@ watch(modal, (open) => {
                         </button>
                     </div>
 
-                    <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title" :is-group="chat.isGroup" :created-by="chat.createdBy"
-                        :conversation-id="conversationId" :last-message="chat.lastMessage" :time="chat.sentAt !== null ? chat.sentAt : ''"
+                    <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title"
+                        :is-group="chat.isGroup" :created-by="chat.createdBy" :conversation-id="conversationId"
+                        :last-message="chat.lastMessage" :time="chat.sentAt !== null ? chat.sentAt : ''"
                         :typing-message="chat.typingMessage" @click="openChat(chat.id)" />
                 </div>
             </div>
@@ -373,8 +374,8 @@ watch(modal, (open) => {
                 <ChatContainer :messages="messages" :user="userData" :send="send" @load-old="addOldMessages" />
             </div>
 
-            <div class=" bg-amber-100 max-w-sm w-full my-4 rounded-xl">
-
+            <div class="max-w-sm w-full my-4 rounded-xl mx-6">
+                <GroupChat/>
             </div>
         </div>
 
