@@ -29,13 +29,11 @@ export const useWebSocket = () => {
 
 
       if (data.type === 'typing' && data.userId !== userData.id && data.conversationId === conversationId.value) {
-        addTypingMessage(data.conversationId, data.userName)
-        addChatTypingMessage(data.conversationId)
+        addChatTypingMessage(data.conversationId, data.userName)
         return;
       }
 
       if (data.type === 'stop_typing' && data.userId !== userData.id && data.conversationId === conversationId.value) {
-        resetTypingMessage()
         resetChatTypingMessage(data.conversationId)
         return;
       }
@@ -43,7 +41,6 @@ export const useWebSocket = () => {
       const isConversationExist = chatRows.value.find((row) => row.id === data.conversationId)
 
       if (data.conversationId === conversationId.value) {
-        resetTypingMessage()
         messages.value.unshift({
           content: data.content,
           time: data.time,
@@ -85,25 +82,29 @@ export const useWebSocket = () => {
 
       if (data.type === 'typing' || data.type === 'stop_typing' && data.conversationId !== conversationId.value) {
         if (data.type === 'stop_typing') {
-          resetTypingMessage()
           resetChatTypingMessage(data.conversationId)
         }
 
         if (data.type === 'typing') {
-          addTypingMessage(data.conversationId, data.userName)
-          addChatTypingMessage(data.conversationId)
+          addChatTypingMessage(data.conversationId, data.userName)
         }
 
         return
       }
 
 
-      chatRows.value.forEach((row) => {
+      chatRows.value = chatRows.value
+      .map((row) => {
         if (row.id === data.conversationId) {
-          row.lastMessage = data.content
-          return
+          return {
+            ...row,
+            lastMessage: data.content,
+            sentAt: data.time,
+          }
         }
+        return row
       })
+      .sort((a, b) => (b.sentAt ?? '').localeCompare(a.sentAt ?? ''))
     }
 
     socket.value.onclose = () => {
