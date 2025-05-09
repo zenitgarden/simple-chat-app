@@ -72,6 +72,12 @@ const reversedMessages = computed(() => {
 
 const chatContainer = ref<HTMLElement | null>(null)
 const isLoading = ref(false)
+const currentVisibleDate = ref<string>('')
+
+const groupRefs = reactive<Map<string, HTMLElement>>(new Map())
+const formattedDate = computed(() =>
+    currentVisibleDate.value ?  formatSentAt(currentVisibleDate.value) : ''
+)
 
 async function fetchOlderMessages() {
     try {
@@ -116,23 +122,45 @@ async function fetchOlderMessages() {
 }
 
 const handleScroll = async () => {
-    if (!chatContainer.value || isLoading.value) return
-    if (page.value === 1 && props.messages.length < 20) return
-    if (reachedEnd.value) return
+  if (!chatContainer.value || isLoading.value) return
 
-    if (chatContainer.value.scrollTop === 0) {
-        isLoading.value = true
+  const container = chatContainer.value
+  const containerRect = container.getBoundingClientRect()
 
-        const previousHeight = chatContainer.value.scrollHeight
+  let closestDate = ''
+  let minDistance = Infinity
+    console.log(groupRefs)
+  for (const [date, el] of groupRefs.entries()) {
+    const elRect = el.getBoundingClientRect()
+    const distance = Math.abs(elRect.top - containerRect.top)
 
-        await fetchOlderMessages()
-        await nextTick()
-
-        const newHeight = chatContainer.value.scrollHeight
-        chatContainer.value.scrollTop = newHeight - previousHeight
-
-        isLoading.value = false
+    if (distance < minDistance) {
+      closestDate = date
+      minDistance = distance
     }
+  }
+
+  if (closestDate) {
+    console.log(closestDate)
+    currentVisibleDate.value = closestDate
+  }
+
+  if (page.value === 1 && props.messages.length < 20) return
+  if (reachedEnd.value) return
+
+  if (container.scrollTop === 0) {
+    isLoading.value = true
+
+    const previousHeight = container.scrollHeight
+
+    await fetchOlderMessages()
+    await nextTick()
+
+    const newHeight = container.scrollHeight
+    container.scrollTop = newHeight - previousHeight
+
+    isLoading.value = false
+  }
 }
 
 const debouncedSendTyping = useDebounceFn(() => {
@@ -153,8 +181,8 @@ const debouncedSendTyping = useDebounceFn(() => {
 
 
 const isTyping = () => {
-   const current = chatRows.value.find((row) => row.id === conversationId.value)
-   return current?.typingMessage ?? ''
+    const current = chatRows.value.find((row) => row.id === conversationId.value)
+    return current?.typingMessage ?? ''
 }
 
 
@@ -166,12 +194,21 @@ watch(
             top: chatContainer.value.scrollHeight,
             behavior: 'auto',
         })
+        if (props.messages.length > 0) {
+            currentVisibleDate.value = props.messages[0].time
+        }
     },
     { immediate: true }
 )
 
+watch(() => conversationId.value, () => {
+  groupRefs.clear()
+  currentVisibleDate.value = props.messages.length > 0 ? props.messages[0].time : ''
+
+}, { immediate: true })
+
 watch(message, () => {
-    if(!message.value) return
+    if (!message.value) return
     debouncedSendTyping()
 })
 
@@ -182,7 +219,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex flex-col h-full w-full rounded-lg shadow bg-slate-100 justify-between">
+    <div class="flex flex-col h-full w-full rounded-lg shadow bg-slate-100 justify-between relative">
         <!-- Chat Messages -->
 
         <div v-if="messages.length === 0" class="flex h-full justify-center items-center py-2">
@@ -201,6 +238,11 @@ onMounted(() => {
             </div>
         </div>
 
+        <div
+            class="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-white px-3 py-1 rounded shadow text-sm text-gray-600">
+            {{ formattedDate }}
+        </div>
+
         <div ref="chatContainer" class="flex flex-col p-6 overflow-y-auto space-y-6" @scroll="handleScroll">
             <div v-if="isLoading" class="flex justify-center items-center py-2">
                 <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -210,7 +252,9 @@ onMounted(() => {
                 </svg>
             </div>
 
-            <div v-for="([label, group]) in reversedMessages" :key="label" class="flex flex-col space-y-3">
+            <div v-for="([label, group]) in reversedMessages"
+                :ref="el => el && groupRefs.set(group[0].time, el as HTMLElement)" :key="label"
+                class="flex flex-col space-y-3">
 
                 <!-- Group label -->
                 <div class="text-center text-xs text-gray-500 font-medium my-2">
