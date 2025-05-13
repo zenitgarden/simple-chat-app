@@ -85,8 +85,8 @@ const { data: conversations } = await useFetch<{ data: { id: string; title: stri
 
 
 <template>
-    <div class="flex flex-col gap-6 border border-gray-200 px-6 h-full shadow-lg rounded-xl py-8">
-        <div class="flex gap-3">
+    <div class="flex flex-col gap-6 lg:border border-gray-200 lg:px-6 h-full lg:shadow-lg rounded-xl lg:py-8">
+        <div class=" hidden lg:flex lg:gap-3">
             <Icon name="lucide:users" size="30" style="color: oklch(60% 0.118 184.704)"
                 class="group-hover:rotate-90 transition-all duration-150" />
             <h2 class="font-bold text-xl">Group Chat</h2>

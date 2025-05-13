@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AvatarProps, DropdownMenuItem } from '@nuxt/ui';
 import { useConversationId } from '~/composables/useConversationId';
-import type { ChatRow, LatestConversation, Message, ResponseSuccess, User } from '~/types/global';
+import type { ChatRow, Message, ResponseSuccess, User } from '~/types/global';
 import { useDebounceFn } from '@vueuse/core'
 import { groupSchema as groupChatSchema, privateSchema as privateChatSchema } from '~/schemas/chat.schema';
 import { useChatRows } from '~/composables/chat'
@@ -12,6 +12,7 @@ const conversationId = useConversationId()
 const toast = useToast()
 const config = useRuntimeConfig()
 const chatRows = useChatRows()
+const { width, updateSize } = useScreenSize()
 
 const userData = user.value as User
 const api = `${config.public.apiBase}`
@@ -19,7 +20,7 @@ const wsUrl = `${config.public.wsBase}/ws?token=` + userData.token
 
 const modal = ref(false)
 const options = ref<{ label: string, value: string, avatar: { alt: string } }[]>([])
-const isLoading = ref(false)
+const mountLoading = ref(false)
 const searchTerm = ref('')
 const selectedUser = ref<{ label: string, value: string, avatar: AvatarProps } | null>(null)
 const loading = ref(false)
@@ -53,38 +54,44 @@ async function logout() {
     await navigateTo('/login')
 }
 
+const clearChat = () => {
+    messages.value = []
+    conversationId.value = ''
+}
+
 
 onMounted(async () => {
+    updateSize()
     connect(wsUrl)
-    isLoading.value = true
+    mountLoading.value = true
     try {
 
-        const [chats, conversationsLatest] = await Promise.all([
+        const [chats] = await Promise.all([
             fetch(api + '/api/conversations', {
                 headers: {
                     'Authorization': `Bearer ${userData.token}`,
                     'Content-Type': 'application/json'
                 }
             }),
-            fetch(api + '/api/conversations/latest', {
-                headers: {
-                    'Authorization': `Bearer ${userData.token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+            // fetch(api + '/api/conversations/latest', {
+            //     headers: {
+            //         'Authorization': `Bearer ${userData.token}`,
+            //         'Content-Type': 'application/json'
+            //     }
+            // })
         ])
 
-        if (!chats.ok || !conversationsLatest.ok) {
+        if (!chats.ok) {
             throw new Error(`Fetch error: ${chats.status}`)
         }
 
 
-        const [chatsJson, conversationsLatestJson]: [ResponseSuccess<ChatRow[]>, ResponseSuccess<LatestConversation>] = await Promise.all([
+        const [chatsJson]: [ResponseSuccess<ChatRow[]>] = await Promise.all([
             chats.json(),
-            conversationsLatest.json()
+            // conversationsLatest.json()
         ])
 
-        if (!chatsJson || !conversationsLatestJson) {
+        if (!chatsJson) {
             throw new Error('No data')
         }
 
@@ -102,20 +109,19 @@ onMounted(async () => {
             })
         }
 
-        if (conversationsLatestJson.data !== null) {
-            messages.value = conversationsLatestJson.data.messages.map((message) => ({
-                content: message.content,
-                userId: message.sender_id,
-                userName: message.sender_name,
-                time: message.sent_at
-            }))
-            conversationId.value = conversationsLatestJson.data.conversation_id
-        }
+        // if (conversationsLatestJson.data !== null) {
+        //     messages.value = conversationsLatestJson.data.messages.map((message) => ({
+        //         content: message.content,
+        //         userId: message.sender_id,
+        //         userName: message.sender_name,
+        //         time: message.sent_at
+        //     }))
+        //     conversationId.value = conversationsLatestJson.data.conversation_id
+        // }
     } catch {
         toast.add({ title: 'Something went wrong !', description: 'Please try again later.', color: 'error' })
-        isLoading.value = false
     } finally {
-        isLoading.value = false
+        mountLoading.value = false
     }
 })
 
@@ -260,7 +266,7 @@ watch(modal, (open) => {
 </script>
 
 <template>
-    <div class="h-screen flex relative">
+    <div class="h-screen flex flex-col xl:flex xl:flex-row justify-between relative">
         <UModal v-model:open="modal" :dismissible="false" title="Start a new chat" description=" ">
             <template #body>
                 <UForm :state="newConversation"
@@ -296,7 +302,7 @@ watch(modal, (open) => {
             </template>
         </UModal>
 
-        <div class="flex justify-between flex-col pl-4 py-8">
+        <div class="hidden xl:flex justify-between flex-col pl-4 py-8">
             <UDropdownMenu :items="items" :content="{
                 align: 'start',
                 side: 'bottom',
@@ -325,8 +331,10 @@ watch(modal, (open) => {
             </div>
         </div>
 
-        <div class="rounded-bl-4xl rounded-tl-4xl shadow-lg border border-gray-100 w-full flex">
-            <div class="max-w-sm w-full mx-6 flex flex-col gap-6 h-full">
+        <div
+            class="xl:rounded-bl-4xl xl:rounded-tl-4xl xl:shadow-lg xl:border lg:border-gray-100 w-full h-full overflow-y-auto lg:overflow-y-hidden flex">
+            <div v-if="width < 768 && conversationId === '' || width >= 768"
+                class="md:max-w-sm w-full mx-6 flex flex-col gap-6">
                 <div class="py-8 border-b-2 border-gray-200">
                     <p class="text-3xl font-bold">Hello {{ userData.name }},</p>
                     <p class="text-sm">Welcome to Chample</p>
@@ -351,8 +359,26 @@ watch(modal, (open) => {
                 </div>
 
                 <!-- Chats -->
-                <div class="flex flex-col h-full overflow-y-auto">
-                    <div v-if="chatRows.length === 0"
+                <div class="flex flex-col h-full overflow-y-auto lg:overflow-y-hidden">
+                    <div v-if="mountLoading === false">
+                        <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title"
+                            :is-group="chat.isGroup" :created-by="chat.createdBy" :conversation-id="conversationId"
+                            :last-message="chat.lastMessage" :time="chat.sentAt !== null ? chat.sentAt : ''"
+                            :typing-message="chat.typingMessage" @click="openChat(chat.id)" />
+                    </div>
+
+                    <div v-if="mountLoading === true" class="flex gap-6 flex-col mx-4">
+                        <div v-for="i in 5" :key="i" class="flex items-center gap-3 ">
+                            <USkeleton class="h-10 w-10 rounded-full" />
+
+                            <div class="grid gap-2">
+                                <USkeleton class="h-4 w-[250px]" />
+                                <USkeleton class="h-4 w-[200px]" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="mountLoading === false && chatRows.length === 0"
                         class="flex flex-col items-center justify-center h-full text-gray-500 text-center py-10 px-4 space-y-2">
                         <h3 class="text-lg font-semibold">No conversations yet</h3>
                         <p class="text-sm text-gray-400">Start a new chat to see it listed here.</p>
@@ -363,22 +389,55 @@ watch(modal, (open) => {
                         </button>
                     </div>
 
-                    <ChatRow v-for="chat in chatRows" :id="chat.id" :key="chat.id" :name="chat.title"
-                        :is-group="chat.isGroup" :created-by="chat.createdBy" :conversation-id="conversationId"
-                        :last-message="chat.lastMessage" :time="chat.sentAt !== null ? chat.sentAt : ''"
-                        :typing-message="chat.typingMessage" @click="openChat(chat.id)" />
                 </div>
             </div>
 
-            <div class=" bg-gray-100 w-full my-4 rounded-xl">
-                <ChatContainer :messages="messages" :user="userData" :send="send" @load-old="addOldMessages" />
+            <USkeleton v-if="mountLoading === true" class="w-full my-4" />
+
+            <div v-if="mountLoading === false" :class="['hidden md:block w-full my-4']">
+                <ChatContainer :messages="messages" :user="userData" :send="send" :clear="clearChat"
+                    @load-old="addOldMessages" />
             </div>
 
-            <div class="max-w-sm w-full my-4 rounded-xl mx-6">
-                <GroupChat/>
+            <div class="hidden xl:block max-w-sm w-full my-4 rounded-xl mx-6">
+                <GroupChat />
             </div>
         </div>
 
+        <!-- mobile -->
+        <div v-if="conversationId === '' || width >= 768"
+            class="flex xl:hidden justify-between px-20 sm:justify-center sm:px-0 sm:gap-10 py-3 border-t bg-white border-gray-100 bottom-0 right-0 left-0 z-50">
+            <UDropdownMenu :items="items" :content="{
+                align: 'start',
+                side: 'bottom',
+                sideOffset: 8
+            }" :ui="{
+                content: 'w-36'
+            }">
+                <div class="flex flex-col items-center gap-1 group">
+                    <div
+                        class="rounded-lg border border-gray-200 flex justify-center items-center p-2 hover:scale-105 active:scale-95 duration-300 transition-all">
+                        <Icon name="lucide:settings-2" size="24" style="color: oklch(60% 0.118 184.704)"
+                            class="group-hover:rotate-90 transition-all duration-150" />
+                    </div>
+                    <p class="text-xs">Menu</p>
+                </div>
+            </UDropdownMenu>
+            <UModal fullscreen title="Group Chat">
+                <div class="flex flex-col items-center gap-1">
+
+                    <div
+                        class="rounded-lg border border-gray-200 flex justify-center items-center p-2 hover:scale-105 active:scale-95 duration-300 transition-all">
+                        <Icon name="fluent:people-12-filled" size="24" style="color: oklch(60% 0.118 184.704)" />
+                    </div>
+                    <p class="text-xs">Groups</p>
+                </div>
+
+                <template #body>
+                    <GroupChat />
+                </template>
+            </UModal>
+        </div>
 
     </div>
 </template>

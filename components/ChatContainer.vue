@@ -10,6 +10,7 @@ const props = defineProps<{
     send: (msg: { content: string, type: string }) => void
     user: User
     messages: Message[]
+    clear: () => void
 }>()
 
 const emit = defineEmits(['load-old'])
@@ -19,6 +20,7 @@ const chatRows = useChatRows()
 const config = useRuntimeConfig()
 const api = `${config.public.apiBase}`
 const toast = useToast()
+const { width } = useScreenSize()
 
 
 const message = ref('')
@@ -129,7 +131,6 @@ const handleScroll = async () => {
 
   let closestDate = ''
   let minDistance = Infinity
-    console.log(groupRefs)
   for (const [date, el] of groupRefs.entries()) {
     const elRect = el.getBoundingClientRect()
     const distance = Math.abs(elRect.top - containerRect.top)
@@ -141,7 +142,6 @@ const handleScroll = async () => {
   }
 
   if (closestDate) {
-    console.log(closestDate)
     currentVisibleDate.value = closestDate
   }
 
@@ -219,8 +219,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex flex-col h-full w-full rounded-lg shadow bg-slate-100 justify-between relative">
+    <div v-if="width < 768 && conversationId !== '' || width >= 768" class="flex flex-col h-full w-full rounded-lg shadow bg-slate-100 justify-between relative">
         <!-- Chat Messages -->
+         <div v-if="width < 768" class="rounded bg-white py-2 px-3 flex items-center absolute top-3 left-3 border border-gray-100 shadow hover:scale-105 active:scale-95 transition-all duration-300"
+         @click="clear">
+             <UIcon name="mdi:arrow-left" size="20"/>
+         </div>
 
         <div v-if="messages.length === 0" class="flex h-full justify-center items-center py-2">
             <div class="flex flex-col items-center justify-center text-center text-gray-500 py-16 space-y-4">

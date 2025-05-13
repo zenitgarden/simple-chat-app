@@ -26,7 +26,7 @@ export const useDate = () => {
       return format(sent, 'EEEE') // "Wednesday", "Monday", etc.
     }
   
-    return format(sent, 'd/MMM/yyyy') 
+    return format(sent, 'd MMM yyyy') 
   }
 
   const formatChatRow = (sentAtIso: string): string => {
@@ -47,7 +47,7 @@ export const useDate = () => {
       return format(sent, 'EEEE') // "Wednesday", "Monday", etc.
     }
   
-    return format(sent, 'd/MMM/yyyy') 
+    return format(sent, 'd MMM yyyy') 
   }
 
 
