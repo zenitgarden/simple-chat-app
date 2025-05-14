@@ -212,14 +212,10 @@ watch(message, () => {
     debouncedSendTyping()
 })
 
-onMounted(() => {
-    resizeTextarea()
-})
-
 </script>
 
 <template>
-    <div v-if="width < 768 && conversationId !== '' || width >= 768" class="flex flex-col h-full w-full rounded-lg shadow bg-slate-100 justify-between relative">
+    <div class="flex flex-col h-full w-full shadow bg-slate-100 justify-between relative">
         <!-- Chat Messages -->
          <div v-if="width < 768" class="rounded bg-white py-2 px-3 flex items-center absolute top-3 left-3 border border-gray-100 shadow hover:scale-105 active:scale-95 transition-all duration-300"
          @click="clear">

@@ -394,7 +394,7 @@ watch(modal, (open) => {
 
             <USkeleton v-if="mountLoading === true" class="w-full my-4" />
 
-            <div v-if="mountLoading === false" :class="['hidden md:block w-full my-4']">
+            <div v-if="mountLoading === false" :class="['md:block w-full', width < 768 && conversationId === '' ? 'hidden' : '']">
                 <ChatContainer :messages="messages" :user="userData" :send="send" :clear="clearChat"
                     @load-old="addOldMessages" />
             </div>
